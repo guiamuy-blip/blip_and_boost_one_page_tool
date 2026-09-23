@@ -49,6 +49,8 @@ const STR={
   hnAskPh:'What we need, in one line',hnWhyPh:'Why it matters, in one line',hnPrereq:'Prerequisite for other asks',hnPrereqShort:'Prerequisites',
   hnNewAsk:'New ask',
   tabROI:'ROI Calculator',tabROIsub:'Scenarios, LTV and ROI simulation',roiSrc:'Boost Mobile ROI & LTV simulator \u2014 scenarios shared by the team',
+  cancelEdit:'Cancel',discardTitle:'Discard changes',discardBtn:'Discard',discarded:'Changes discarded. You are back to the last shared version.',
+  discardMsg:'Discard every unsaved change, in all tabs including the ROI calculator, and go back to the last version shared by the team? This cannot be undone.',
   roiDirty:'You have changes not yet shared with the team.',roiPublish:'Publish to team',roiSynced:'Scenarios, formulas and presets are shared with the team',
   roiReadonly:'Viewing a saved version: the calculator is read-only. Changes here are not kept.',
   loginTitle:'Boost \u00d7 Blip One Page',loginSub:'Shared workspace. Sign in to view and edit.',
@@ -104,6 +106,8 @@ const STR={
   hnAskPh:'O que precisamos, em uma linha',hnWhyPh:'Por que importa, em uma linha',hnPrereq:'Pr\u00e9-requisito para os demais pedidos',hnPrereqShort:'Pr\u00e9-requisitos',
   hnNewAsk:'Novo pedido',
   tabROI:'Calculadora de ROI',tabROIsub:'Cen\u00e1rios, LTV e simula\u00e7\u00e3o de ROI',roiSrc:'Simulador de ROI e LTV da Boost Mobile \u2014 cen\u00e1rios compartilhados pelo time',
+  cancelEdit:'Cancelar',discardTitle:'Descartar altera\u00e7\u00f5es',discardBtn:'Descartar',discarded:'Altera\u00e7\u00f5es descartadas. Voc\u00ea voltou \u00e0 \u00faltima vers\u00e3o compartilhada.',
+  discardMsg:'Descartar todas as altera\u00e7\u00f5es n\u00e3o salvas, em todas as abas, inclusive a calculadora de ROI, e voltar \u00e0 \u00faltima vers\u00e3o compartilhada pelo time? Esta a\u00e7\u00e3o n\u00e3o pode ser desfeita.',
   roiDirty:'Voc\u00ea tem altera\u00e7\u00f5es ainda n\u00e3o compartilhadas com o time.',roiPublish:'Publicar para o time',roiSynced:'Cen\u00e1rios, f\u00f3rmulas e presets s\u00e3o compartilhados com o time',
   roiReadonly:'Visualizando uma vers\u00e3o salva: a calculadora est\u00e1 em modo somente leitura. Altera\u00e7\u00f5es aqui n\u00e3o s\u00e3o mantidas.',
   loginTitle:'One Page Boost \u00d7 Blip',loginSub:'Espa\u00e7o compartilhado. Entre para visualizar e editar.',
@@ -446,7 +450,8 @@ function renderRoiBar(){
   const b=$('roi-bar'); if(!b) return;
   if(viewing){ b.className='roi-bar ro'; b.innerHTML=icon('shield')+'<span>'+esc(t('roiReadonly'))+'</span>'; return; }
   if(dirty){ b.className='roi-bar dirty'; b.innerHTML=icon('history')+'<span>'+esc(t('roiDirty'))+'</span>'+
-    '<button class="btn sm" data-act="roi-publish">'+icon('save')+esc(t('roiPublish'))+'</button>'; return; }
+    '<span class="btn-row" style="margin-left:auto"><button class="btn ghost sm" data-act="roi-discard">'+icon('x')+esc(t('discardBtn'))+'</button>'+
+    '<button class="btn sm" data-act="roi-publish">'+icon('save')+esc(t('roiPublish'))+'</button></span>'; return; }
   b.className='roi-bar'; b.innerHTML=icon('team')+'<span>'+esc(t('roiSynced'))+
     (remoteMeta&&remoteMeta.updatedBy?' \u00b7 '+esc(t('lastEdit'))+' '+esc(remoteMeta.updatedBy):'')+(syncing?' \u00b7 '+esc(t('syncing')):'')+'</span>';
 }
@@ -586,6 +591,7 @@ document.addEventListener('click',e=>{
     case 'exit-view': viewing=null; renderAll(); break;
     case 'pull': pullRemote(); break;
     case 'roi-publish': doSave(); break;
+    case 'roi-discard': askDiscard(false); break;
     case 'goto-si': tab='si'; lsSet(LS.prefs,{lang:lang,tab:tab}); open.add(id); detailOpen=true; renderAll();
       { const el=$('card-'+id); if(el){ el.scrollIntoView({behavior:'smooth',block:'start'}); el.classList.add('flash'); setTimeout(()=>el.classList.remove('flash'),1300);} } break;
     case 'hn-add': { ensureHelp(state); state.help.asks.push({id:'h'+Date.now().toString(36),to:b.dataset.to,top:false,links:[],
@@ -620,6 +626,22 @@ $('btn-add').onclick=()=>{
 };
 $('btn-versions').onclick=openDrawer;
 $('drawer-close').onclick=closeDrawer; $('drawer-back').onclick=closeDrawer;
+async function discardChanges(exitEdit){
+  let data=null;
+  try{ data=await loadShared(); }catch(e){ data=null; }
+  state=data?data:ensureHelp(clone(ORIGINAL));
+  if(!data) markRoiBase(state.roi);
+  dirty=false; remoteAhead=false; viewing=null;
+  clearTimeout(draftTimer); lsSet(LS.draft,null);
+  if(exitEdit) mode='display';
+  renderAll(); syncRoi(true);
+  toast(t('discarded'));
+}
+function askDiscard(exitEdit){
+  if(!dirty){ if(exitEdit){ mode='display'; renderAll(); } syncRoi(true); return; }
+  confirmBox(t('discardTitle'),t('discardMsg'),t('discardBtn'),()=>discardChanges(exitEdit));
+}
+$('btn-cancel').onclick=()=>askDiscard(true);
 function doSave(){ askSave(async(label,note)=>{
   const rec={id:'v'+Date.now().toString(36),label:label||('v'+(versions.length+1)),note:note||'',savedAt:Date.now(),data:clone(state)};
   if(!await persistVersion(rec)) return;

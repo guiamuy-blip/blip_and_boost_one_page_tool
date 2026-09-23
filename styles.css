@@ -448,3 +448,4 @@ main:has(#page-roi.active){max-width:none;padding:12px 16px 12px}
 .roi-frame{display:block;width:100%;height:calc(100vh - 205px);min-height:560px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg-page)}
 @media (max-width:640px){.roi-frame{height:calc(100vh - 150px)}}
 @media print{.roi-bar{display:none!important}.roi-frame{height:auto;min-height:0;border:none}}
+.roi-bar .btn-row .btn{margin-left:0}
