@@ -1,6 +1,6 @@
 (function(){
 'use strict';
-const CFG=window.CFG||{owner:'',repo:'',branch:'main',dataPath:'data/content.json'};
+const CFG=Object.assign({owner:'',repo:'',branch:'main',dataPath:'content.json',originalPath:'original.json',versionsPath:'versions/'},window.CFG||{});
 let ORIGINAL=null;
 const ICONS=['bot','target','loop','callback','split','chat','door','megaphone','bell','team','catalog','card','users','filter','cart','star','chart','flag','bolt','link','store','shield'];
 const LS={draft:'bb1p.draft',prefs:'bb1p.prefs',profile:'bb1p.profile',token:'bb1p.token',auth:'bb1p.auth',logos:'bb1p.logos'};
@@ -625,7 +625,7 @@ async function saveShared(rec){
     contentSha=cur?cur.sha:null;
     const vlist=(cur&&cur.json.versions?cur.json.versions.slice():[]);
     if(rec){
-      await ghPut('data/versions/'+rec.id+'.json',{id:rec.id,label:rec.label,note:rec.note,savedAt:rec.savedAt,author:rec.author,data:rec.data},null,'version: '+rec.label);
+      await ghPut(CFG.versionsPath+rec.id+'.json',{id:rec.id,label:rec.label,note:rec.note,savedAt:rec.savedAt,author:rec.author,data:rec.data},null,'version: '+rec.label);
       vlist.unshift({id:rec.id,label:rec.label,note:rec.note,savedAt:rec.savedAt,author:rec.author});
     }
     const payload={schema:ORIGINAL.schema,updatedAt:Date.now(),updatedBy:profile?profile.name:'',data:state,versions:vlist.slice(0,40)};
@@ -664,7 +664,7 @@ async function pollRemote(){
 }
 function startPolling(){ clearInterval(pollTimer); pollTimer=setInterval(pollRemote, token?20000:120000); }
 async function openVersionRemote(id){
-  const v=await ghGet('data/versions/'+id+'.json');
+  const v=await ghGet(CFG.versionsPath+id+'.json');
   return v?v.json.data:null;
 }
 
@@ -705,7 +705,7 @@ function loadDraft(){
 async function boot(){
   loadPrefs();
   try{
-    const r=await fetch('data/original.json',{cache:'no-store'});
+    const r=await fetch(CFG.originalPath+'?t='+Date.now(),{cache:'no-store'});
     ORIGINAL=Object.freeze(await r.json());
   }catch(e){ document.body.innerHTML='<p style="padding:24px;font-family:sans-serif">'+STR.en.loadErr+'</p>'; return; }
   profile=lsGet(LS.profile); token=lsGet(LS.token)||null;

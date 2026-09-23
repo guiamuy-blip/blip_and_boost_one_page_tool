@@ -1,7 +1,9 @@
-// Preencha com o seu usuario do GitHub e o nome do repositorio.
+// Configuracao da aplicacao. Arquivos ficam todos na raiz do repositorio.
 window.CFG = {
-  owner: 'SEU-USUARIO-GITHUB',
-  repo: 'boost-blip-onepage',
+  owner: 'guiamuy-blip',
+  repo: 'blip_and_boost_one_page_tool',
   branch: 'main',
-  dataPath: 'data/content.json'
+  dataPath: 'content.json',
+  originalPath: 'original.json',
+  versionsPath: 'versions/'
 };
