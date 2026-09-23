@@ -449,3 +449,12 @@ main:has(#page-roi.active){max-width:none;padding:12px 16px 12px}
 @media (max-width:640px){.roi-frame{height:calc(100vh - 150px)}}
 @media print{.roi-bar{display:none!important}.roi-frame{height:auto;min-height:0;border:none}}
 .roi-bar .btn-row .btn{margin-left:0}
+
+/* save modal: update vs new */
+.save-modes{display:flex;flex-direction:column;gap:8px;margin-bottom:14px}
+.save-mode{display:flex;gap:10px;align-items:flex-start;border:1px solid var(--border-input);border-radius:var(--radius);padding:9px 11px;cursor:pointer}
+.save-mode:has(input:checked){border-color:var(--brand-orange);background:rgba(255,92,0,.08)}
+.save-mode input{margin-top:2px;accent-color:var(--brand-orange)}
+.save-mode b{display:block;font-size:12.5px}
+.save-mode small{display:block;font-size:11px;color:var(--text-secondary);margin-top:2px;line-height:1.4}
+.ver .btn-row .btn.danger{margin-left:auto}

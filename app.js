@@ -49,6 +49,15 @@ const STR={
   hnAskPh:'What we need, in one line',hnWhyPh:'Why it matters, in one line',hnPrereq:'Prerequisite for other asks',hnPrereqShort:'Prerequisites',
   hnNewAsk:'New ask',
   tabROI:'ROI Calculator',tabROIsub:'Scenarios, LTV and ROI simulation',roiSrc:'Boost Mobile ROI & LTV simulator \u2014 scenarios shared by the team',
+  saveModeUpdate:'Update current version',saveModeNew:'Save as a new version',
+  saveModeUpdateHint:function(n){return 'Overwrites "'+n+'" with your changes. No new version is created.'},
+  saveModeNewHint:'Keeps the current version untouched and adds a new one to the history.',
+  updatedToast:'Version updated',verUpdated:'updated',verBy:'by',
+  rename:'Rename',renameTitle:'Rename version',renamed:'Version renamed.',
+  delVersion:'Delete',delVerTitle:'Delete version',
+  delVerMsg:function(n){return 'Delete version "'+n+'" from the history for everyone? The content currently on screen is not affected. This cannot be undone.'},
+  delVerLoaded:'This is the version currently loaded. The content stays on screen as the current shared state; only the history entry is removed.',
+  verDeleted:'Version deleted.',currentShared:'Current shared state',verErr:'Could not update the version history',
   cancelEdit:'Cancel',discardTitle:'Discard changes',discardBtn:'Discard',discarded:'Changes discarded. You are back to the last shared version.',
   discardMsg:'Discard every unsaved change, in all tabs including the ROI calculator, and go back to the last version shared by the team? This cannot be undone.',
   roiDirty:'You have changes not yet shared with the team.',roiPublish:'Publish to team',roiSynced:'Scenarios, formulas and presets are shared with the team',
@@ -106,6 +115,15 @@ const STR={
   hnAskPh:'O que precisamos, em uma linha',hnWhyPh:'Por que importa, em uma linha',hnPrereq:'Pr\u00e9-requisito para os demais pedidos',hnPrereqShort:'Pr\u00e9-requisitos',
   hnNewAsk:'Novo pedido',
   tabROI:'Calculadora de ROI',tabROIsub:'Cen\u00e1rios, LTV e simula\u00e7\u00e3o de ROI',roiSrc:'Simulador de ROI e LTV da Boost Mobile \u2014 cen\u00e1rios compartilhados pelo time',
+  saveModeUpdate:'Atualizar a vers\u00e3o atual',saveModeNew:'Salvar como nova vers\u00e3o',
+  saveModeUpdateHint:function(n){return 'Sobrescreve "'+n+'" com as suas altera\u00e7\u00f5es. Nenhuma vers\u00e3o nova \u00e9 criada.'},
+  saveModeNewHint:'Mant\u00e9m a vers\u00e3o atual intacta e adiciona uma nova ao hist\u00f3rico.',
+  updatedToast:'Vers\u00e3o atualizada',verUpdated:'atualizada',verBy:'por',
+  rename:'Renomear',renameTitle:'Renomear vers\u00e3o',renamed:'Vers\u00e3o renomeada.',
+  delVersion:'Excluir',delVerTitle:'Excluir vers\u00e3o',
+  delVerMsg:function(n){return 'Excluir a vers\u00e3o "'+n+'" do hist\u00f3rico para todo o time? O conte\u00fado que est\u00e1 na tela n\u00e3o \u00e9 afetado. Esta a\u00e7\u00e3o n\u00e3o pode ser desfeita.'},
+  delVerLoaded:'Esta \u00e9 a vers\u00e3o carregada agora. O conte\u00fado continua na tela como estado compartilhado atual; s\u00f3 o registro no hist\u00f3rico \u00e9 removido.',
+  verDeleted:'Vers\u00e3o exclu\u00edda.',currentShared:'Estado compartilhado atual',verErr:'N\u00e3o foi poss\u00edvel atualizar o hist\u00f3rico de vers\u00f5es',
   cancelEdit:'Cancelar',discardTitle:'Descartar altera\u00e7\u00f5es',discardBtn:'Descartar',discarded:'Altera\u00e7\u00f5es descartadas. Voc\u00ea voltou \u00e0 \u00faltima vers\u00e3o compartilhada.',
   discardMsg:'Descartar todas as altera\u00e7\u00f5es n\u00e3o salvas, em todas as abas, inclusive a calculadora de ROI, e voltar \u00e0 \u00faltima vers\u00e3o compartilhada pelo time? Esta a\u00e7\u00e3o n\u00e3o pode ser desfeita.',
   roiDirty:'Voc\u00ea tem altera\u00e7\u00f5es ainda n\u00e3o compartilhadas com o time.',roiPublish:'Publicar para o time',roiSynced:'Cen\u00e1rios, f\u00f3rmulas e presets s\u00e3o compartilhados com o time',
@@ -172,7 +190,7 @@ function renderAll(){
 }
 function renderStatus(){
   const el=$('save-indicator'); el.classList.toggle('dirty',dirty);
-  const where=baseVersion?baseVersion.label:t('original');
+  const where=baseVersion?baseVersion.label:(remoteMeta&&remoteMeta.updatedAt>1?t('currentShared'):t('original'));
   el.textContent=dirty?(t('unsaved')+' '+where):where;
   $('foot-src').textContent=t('source')+': '+(tab==='exec'?F(view().exec.footer.src).replace(/^(Source|Fonte):\s*/,''):tab==='roi'?t('roiSrc'):F(view().si.meta.source));
   renderRoiBar();
@@ -592,6 +610,14 @@ document.addEventListener('click',e=>{
     case 'pull': pullRemote(); break;
     case 'roi-publish': doSave(); break;
     case 'roi-discard': askDiscard(false); break;
+    case 'ver-del': { const v=versions.find(x=>x.id===id); if(!v) return;
+      const extra=(baseVersion&&baseVersion.id===id)?' '+t('delVerLoaded'):'';
+      confirmBox(t('delVerTitle'),t('delVerMsg')(v.label)+extra,t('delVersion'),()=>deleteVersion(id)); break; }
+    case 'ver-rename': { const v=versions.find(x=>x.id===id); if(!v) return;
+      openModal('<h3>'+esc(t('renameTitle'))+'</h3><div class="field"><label for="r-l">'+esc(t('versionName'))+'</label><input type="text" id="r-l" maxlength="60" value="'+esc(v.label)+'"></div>'+
+        '<div class="field"><label for="r-n">'+esc(t('note'))+'</label><textarea id="r-n" rows="3">'+esc(v.note||'')+'</textarea></div>'+
+        '<div class="btn-row" style="justify-content:flex-end"><button class="btn ghost sm" data-act="close-modal">'+esc(t('cancel'))+'</button><button class="btn sm" id="r-ok">'+icon('save')+esc(t('rename'))+'</button></div>');
+      $('r-ok').onclick=()=>{ const l=$('r-l').value.trim()||v.label, n=$('r-n').value.trim(); closeModal(); renameVersion(id,l,n); }; break; }
     case 'goto-si': tab='si'; lsSet(LS.prefs,{lang:lang,tab:tab}); open.add(id); detailOpen=true; renderAll();
       { const el=$('card-'+id); if(el){ el.scrollIntoView({behavior:'smooth',block:'start'}); el.classList.add('flash'); setTimeout(()=>el.classList.remove('flash'),1300);} } break;
     case 'hn-add': { ensureHelp(state); state.help.asks.push({id:'h'+Date.now().toString(36),to:b.dataset.to,top:false,links:[],
@@ -642,11 +668,13 @@ function askDiscard(exitEdit){
   confirmBox(t('discardTitle'),t('discardMsg'),t('discardBtn'),()=>discardChanges(exitEdit));
 }
 $('btn-cancel').onclick=()=>askDiscard(true);
-function doSave(){ askSave(async(label,note)=>{
-  const rec={id:'v'+Date.now().toString(36),label:label||('v'+(versions.length+1)),note:note||'',savedAt:Date.now(),data:clone(state)};
+function doSave(){ askSave(async(label,note,upd)=>{
+  const rec=upd
+    ? {id:upd.id,label:label||upd.label,note:note,savedAt:upd.savedAt,author:upd.author,update:true,data:clone(state)}
+    : {id:'v'+Date.now().toString(36),label:label||('v'+(versions.length+1)),note:note||'',savedAt:Date.now(),data:clone(state)};
   if(!await persistVersion(rec)) return;
   baseVersion={id:rec.id,label:rec.label,savedAt:rec.savedAt}; dirty=false; lsSet(LS.draft,null);
-  renderAll(); toast(t('savedToast')+': '+rec.label+'');
+  renderAll(); toast((upd?t('updatedToast'):t('savedToast'))+': '+rec.label);
 }); }
 $('btn-save').onclick=doSave;
 
@@ -666,11 +694,24 @@ function askText(title,label,val,cb){
   $('m-cancel').onclick=()=>{ closeModal(); cb(''); };
 }
 function askSave(cb){
-  openModal('<h3>'+esc(t('save'))+'</h3><div class="field"><label for="m-l">'+esc(t('versionName'))+'</label><input type="text" id="m-l" maxlength="60"></div>'+
-   '<div class="field"><label for="m-n">'+esc(t('note'))+'</label><textarea id="m-n" rows="3" placeholder="'+esc(t('whatChanged'))+'"></textarea></div>'+
+  const bv=baseVersion&&versions.find(v=>v.id===baseVersion.id);
+  const modes=bv?'<div class="save-modes">'+
+    '<label class="save-mode"><input type="radio" name="m-mode" value="update" checked><span><b>'+esc(t('saveModeUpdate'))+'</b><small>'+esc(t('saveModeUpdateHint')(bv.label))+'</small></span></label>'+
+    '<label class="save-mode"><input type="radio" name="m-mode" value="new"><span><b>'+esc(t('saveModeNew'))+'</b><small>'+esc(t('saveModeNewHint'))+'</small></span></label></div>':'';
+  openModal('<h3>'+esc(t('save'))+'</h3>'+modes+
+   '<div class="field"><label for="m-l">'+esc(t('versionName'))+'</label><input type="text" id="m-l" maxlength="60" value="'+esc(bv?bv.label:'')+'"></div>'+
+   '<div class="field"><label for="m-n">'+esc(t('note'))+'</label><textarea id="m-n" rows="3" placeholder="'+esc(t('whatChanged'))+'">'+esc(bv&&bv.note?bv.note:'')+'</textarea></div>'+
    '<p style="font-size:11px;color:var(--text-dim);margin:0 0 14px">'+esc(t('storeShared'))+'</p>'+
    '<div class="btn-row" style="justify-content:flex-end"><button class="btn ghost sm" data-act="close-modal">'+esc(t('cancel'))+'</button><button class="btn sm" id="m-ok">'+icon('save')+esc(t('save'))+'</button></div>');
-  $('m-ok').onclick=()=>{ const l=$('m-l').value.trim(),n=$('m-n').value.trim(); closeModal(); cb(l,n); };
+  document.querySelectorAll('input[name="m-mode"]').forEach(r=>r.addEventListener('change',()=>{
+    const upd=r.value==='update'&&r.checked;
+    if(r.checked){ $('m-l').value=upd?bv.label:''; $('m-n').value=upd?(bv.note||''):''; }
+  }));
+  $('m-ok').onclick=()=>{
+    const l=$('m-l').value.trim(),n=$('m-n').value.trim();
+    const m=document.querySelector('input[name="m-mode"]:checked');
+    closeModal(); cb(l,n,(m&&m.value==='update')?bv:null);
+  };
 }
 function openDrawer(){ renderDrawer(); $('drawer').classList.add('open'); $('drawer-back').classList.add('open'); }
 function closeDrawer(){ $('drawer').classList.remove('open'); $('drawer-back').classList.remove('open'); }
@@ -680,8 +721,12 @@ function renderDrawer(){
    '<div class="ver'+(cur?'':' current')+'"><div class="v-name">'+icon('shield')+esc(t('original'))+(cur?'':'<span class="badge top">'+esc(t('loaded'))+'</span>')+'</div>'+
    '<div class="v-meta">'+esc(t('originalDesc'))+'</div><div class="btn-row"><button class="btn ghost sm" data-act="view-original">'+icon('eye')+esc(t('viewOriginal'))+'</button></div></div>'+
    (versions.length?versions.map(v=>'<div class="ver'+(v.id===cur?' current':'')+'"><div class="v-name">'+icon('history')+esc(v.label)+(v.id===cur?'<span class="badge top">'+esc(t('loaded'))+'</span>':'')+'</div>'+
-     '<div class="v-meta">'+esc(fmtDate(v.savedAt))+'</div>'+(v.note?'<div class="v-note">'+esc(v.note)+'</div>':'')+
-     '<div class="btn-row"><button class="btn ghost sm" data-act="view-version" data-id="'+esc(v.id)+'">'+icon('eye')+esc(t('view'))+'</button></div></div>').join('')
+     '<div class="v-meta">'+esc(fmtDate(v.savedAt))+(v.author?' \u00b7 '+esc(v.author):'')+
+       (v.updatedAt?'<br>'+esc(t('verUpdated'))+' '+esc(fmtDate(v.updatedAt))+(v.updatedBy?' '+esc(t('verBy'))+' '+esc(v.updatedBy):''):'')+'</div>'+
+     (v.note?'<div class="v-note">'+esc(v.note)+'</div>':'')+
+     '<div class="btn-row"><button class="btn ghost sm" data-act="view-version" data-id="'+esc(v.id)+'">'+icon('eye')+esc(t('view'))+'</button>'+
+     '<button class="btn ghost sm" data-act="ver-rename" data-id="'+esc(v.id)+'">'+icon('edit')+esc(t('rename'))+'</button>'+
+     '<button class="btn danger sm" data-act="ver-del" data-id="'+esc(v.id)+'">'+icon('trash')+esc(t('delVersion'))+'</button></div></div>').join('')
     :'<div class="empty" style="padding:16px;font-size:12px">'+esc(t('noVersions'))+'</div>');
 }
 async function openVersion(id){
@@ -720,6 +765,42 @@ async function ghPut(path,obj,sha,msg){
   if(!r.ok) throw new Error('PUT '+r.status+' '+(await r.text()).slice(0,120));
   return (await r.json()).content.sha;
 }
+async function ghDelete(path,sha,msg){
+  const r=await fetch('https://api.github.com/repos/'+CFG.owner+'/'+CFG.repo+'/contents/'+path,
+    {method:'DELETE',headers:Object.assign({'Content-Type':'application/json'},ghHeaders()),body:JSON.stringify({message:msg,sha:sha,branch:CFG.branch})});
+  if(!r.ok&&r.status!==404) throw new Error('DELETE '+r.status);
+}
+async function editVersionIndex(fn,msg){
+  const cur=await ghGet(CFG.dataPath);
+  if(!cur) throw new Error('no content');
+  const j=cur.json; j.versions=(j.versions||[]).slice();
+  fn(j);
+  const sha=await ghPut(CFG.dataPath,j,cur.sha,msg+' \u2014 '+(profile?profile.name:''));
+  contentSha=sha;
+  versions=j.versions.slice().sort((a,b)=>b.savedAt-a.savedAt);
+  remoteMeta={updatedAt:j.updatedAt,updatedBy:j.updatedBy};
+}
+async function deleteVersion(id){
+  const v=versions.find(x=>x.id===id); if(!v) return;
+  try{
+    syncing=true; renderStatus();
+    const f=await ghGet(CFG.versionsPath+id+'.json');
+    if(f) await ghDelete(CFG.versionsPath+id+'.json',f.sha,'delete version: '+v.label);
+    await editVersionIndex(j=>{ j.versions=j.versions.filter(x=>x.id!==id); if(j.currentVersion&&j.currentVersion.id===id) j.currentVersion=null; },'delete version: '+v.label);
+    if(baseVersion&&baseVersion.id===id) baseVersion=null;
+    if(viewing&&viewing.id===id) viewing=null;
+    syncing=false; renderAll(); renderDrawer(); toast(t('verDeleted'));
+  }catch(e){ syncing=false; renderStatus(); toast(t('verErr')+': '+e.message,true); }
+}
+async function renameVersion(id,label,note){
+  try{
+    syncing=true; renderStatus();
+    await editVersionIndex(j=>{ const e=j.versions.find(x=>x.id===id); if(e){ e.label=label; e.note=note; }
+      if(j.currentVersion&&j.currentVersion.id===id) j.currentVersion.label=label; },'rename version: '+label);
+    if(baseVersion&&baseVersion.id===id) baseVersion.label=label;
+    syncing=false; renderAll(); renderDrawer(); toast(t('renamed'));
+  }catch(e){ syncing=false; renderStatus(); toast(t('verErr')+': '+e.message,true); }
+}
 let contentSha=null;
 async function loadShared(markBase){
   const c=await ghGet(CFG.dataPath);
@@ -727,6 +808,7 @@ async function loadShared(markBase){
   contentSha=c.sha;
   remoteMeta={updatedAt:c.json.updatedAt,updatedBy:c.json.updatedBy};
   versions=(c.json.versions||[]).slice().sort((a,b)=>b.savedAt-a.savedAt);
+  baseVersion=c.json.currentVersion||null;
   const data=(c.json.data&&c.json.data.schema===ORIGINAL.schema)?ensureHelp(c.json.data):null;
   if(data&&markBase!==false) markRoiBase(data.roi);
   return data;
@@ -745,21 +827,31 @@ async function saveShared(rec){
         (rd.roi.scenarios||[]).forEach(s=>{ if(!loc.has(s.id)&&!roiBase.has(s.id)){ state.roi.scenarios.push(s); roiMerged++; } }); }
     }
     if(rec) rec.data=clone(state);
+    const me=profile?profile.name:'', now=Date.now();
     if(rec){
-      await ghPut(CFG.versionsPath+rec.id+'.json',{id:rec.id,label:rec.label,note:rec.note,savedAt:rec.savedAt,author:rec.author,data:rec.data},null,'version: '+rec.label);
-      vlist.unshift({id:rec.id,label:rec.label,note:rec.note,savedAt:rec.savedAt,author:rec.author});
+      const path=CFG.versionsPath+rec.id+'.json';
+      let vsha=null;
+      if(rec.update){ try{ const ex=await ghGet(path); vsha=ex?ex.sha:null; }catch(e){ vsha=null; } }
+      const fileObj={id:rec.id,label:rec.label,note:rec.note,savedAt:rec.savedAt,author:rec.author,data:rec.data};
+      if(rec.update){ fileObj.updatedAt=now; fileObj.updatedBy=me; }
+      await ghPut(path,fileObj,vsha,(rec.update?'update version: ':'version: ')+rec.label);
+      const entry={id:rec.id,label:rec.label,note:rec.note,savedAt:rec.savedAt,author:rec.author};
+      if(rec.update){ entry.updatedAt=now; entry.updatedBy=me; }
+      const i=vlist.findIndex(v=>v.id===rec.id);
+      if(i>=0) vlist[i]=entry; else vlist.unshift(entry);
     }
-    const payload={schema:ORIGINAL.schema,updatedAt:Date.now(),updatedBy:profile?profile.name:'',data:state,versions:vlist.slice(0,40)};
-    contentSha=await ghPut(CFG.dataPath,payload,contentSha,(rec?'save version: '+rec.label:'update')+' \u2014 '+(profile?profile.name:''));
+    const payload={schema:ORIGINAL.schema,updatedAt:now,updatedBy:me,data:state,versions:vlist.slice(0,40),
+      currentVersion:rec?{id:rec.id,label:rec.label,savedAt:rec.savedAt}:((cur&&cur.json.currentVersion)||null)};
+    contentSha=await ghPut(CFG.dataPath,payload,contentSha,(rec?(rec.update?'update version: ':'save version: ')+rec.label:'update')+' \u2014 '+me);
     remoteMeta={updatedAt:payload.updatedAt,updatedBy:payload.updatedBy};
-    versions=payload.versions; remoteAhead=false; syncing=false; markRoiBase(state.roi);
+    versions=payload.versions.slice().sort((a,b)=>b.savedAt-a.savedAt); remoteAhead=false; syncing=false; markRoiBase(state.roi);
     if(roiMerged) syncRoi(true);
     renderStatus();
     return true;
   }catch(e){ syncing=false; toast(t('syncErr')+': '+e.message,true); renderStatus(); return false; }
 }
 async function persistVersion(rec){
-  rec.author=profile?profile.name:'';
+  if(!rec.update) rec.author=profile?profile.name:'';
   const ok=await saveShared(rec);
   if(ok) lsSet(LS.draft,null);
   return ok;
@@ -779,7 +871,7 @@ async function pollRemote(){
       versions=(c.json.versions||[]).sort((a,b)=>b.savedAt-a.savedAt);
       if(dirty||tab==='roi'){ remoteAhead=true; remoteMeta={updatedAt:c.json.updatedAt,updatedBy:c.json.updatedBy}; renderBanner(); renderStatus(); }
       else if(!viewing&&c.json.data&&c.json.data.schema===ORIGINAL.schema){
-        state=ensureHelp(c.json.data); contentSha=c.sha; markRoiBase(state.roi); remoteMeta={updatedAt:c.json.updatedAt,updatedBy:c.json.updatedBy};
+        state=ensureHelp(c.json.data); contentSha=c.sha; markRoiBase(state.roi); baseVersion=c.json.currentVersion||null; remoteMeta={updatedAt:c.json.updatedAt,updatedBy:c.json.updatedBy};
         renderAll(); toast(t('lastEdit')+' '+(c.json.updatedBy||''));
       }
     }
