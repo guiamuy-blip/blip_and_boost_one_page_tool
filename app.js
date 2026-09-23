@@ -44,6 +44,10 @@ const STR={
   hnWhat:'What we are asking',hnWhy:'KPI this unlocks',hnProof:'Proof point / benchmark from other clients',
   hnProofPh:'Add the result or benchmark from another client that justifies this ask',hnNoProof:'No proof point added yet.',
   hnAsks:'asks',hnFor:'Asks to',hnBlocked:'Blocking initiative',hnWith:'with a proof point',
+  hnColAsk:'Ask \u00b7 why it matters \u00b7 linked initiatives',hnColForecast:'Forecast impact',hnColProof:'Proof point (other clients)',
+  hnForecastPh:'e.g. +X% conversion, +N sales/month',hnProofPh2:'e.g. Client Y: +Z% after the same change',
+  hnAskPh:'What we need, in one line',hnWhyPh:'Why it matters, in one line',hnPrereq:'Prerequisite for other asks',hnPrereqShort:'Prerequisites',
+  hnNewAsk:'New ask',
   loginTitle:'Boost \u00d7 Blip One Page',loginSub:'Shared workspace. Sign in to view and edit.',
   loginPass:'Access key',loginName:'Your name',
   loginPassHint:'The shared GitHub access key given to you by your team. Anyone who signs in can view and edit.',
@@ -92,6 +96,10 @@ const STR={
   hnWhat:'O que estamos pedindo',hnWhy:'KPI que isso destrava',hnProof:'Prova / benchmark de outros clientes',
   hnProofPh:'Adicione o resultado ou benchmark de outro cliente que justifica este pedido',hnNoProof:'Nenhuma prova adicionada ainda.',
   hnAsks:'pedidos',hnFor:'Pedidos para',hnBlocked:'Iniciativa bloqueante',hnWith:'com prova registrada',
+  hnColAsk:'Pedido \u00b7 por que importa \u00b7 iniciativas ligadas',hnColForecast:'Impacto previsto',hnColProof:'Prova (outros clientes)',
+  hnForecastPh:'ex.: +X% de convers\u00e3o, +N vendas/m\u00eas',hnProofPh2:'ex.: Cliente Y: +Z% ap\u00f3s a mesma mudan\u00e7a',
+  hnAskPh:'O que precisamos, em uma linha',hnWhyPh:'Por que importa, em uma linha',hnPrereq:'Pr\u00e9-requisito para os demais pedidos',hnPrereqShort:'Pr\u00e9-requisitos',
+  hnNewAsk:'Novo pedido',
   loginTitle:'One Page Boost \u00d7 Blip',loginSub:'Espa\u00e7o compartilhado. Entre para visualizar e editar.',
   loginPass:'Chave de acesso',loginName:'Seu nome',
   loginPassHint:'A chave de acesso do GitHub compartilhada pelo seu time. Quem entrar pode visualizar e editar.',
@@ -361,39 +369,59 @@ function renderExec(){
   $('page-exec').innerHTML=h;
 }
 
+function ensureHelp(d){ if(d&&!d.help&&ORIGINAL&&ORIGINAL.help) d.help=clone(ORIGINAL.help); return d; }
 function renderHelp(){
-  const d=view().si, ed=editable();
-  const gm=d.initiatives.filter(x=>A(x.helpMeta).length), gb=d.initiatives.filter(x=>A(x.helpBoost).length);
-  const nm=gm.reduce((a,x)=>a+A(x.helpMeta).length,0), nb=gb.reduce((a,x)=>a+A(x.helpBoost).length,0);
-  const card=(x,key,cls)=>{
-    const o=objOf(view(),x.impact), bench=x.bench?F(x.bench):'';
-    return '<article class="hn-card">'+
-      '<header class="hn-head"><span class="hn-ic '+cls+'">'+icon(x.icon)+'</span>'+
-      '<div><div class="hn-name">'+esc(F(x.name))+'</div><div class="hn-badges">'+
-      '<span class="badge dim" style="color:'+esc(o.color)+';border-color:'+esc(o.color)+'">'+esc(F(o.name))+'</span>'+
-      (x.top?'<span class="badge top">'+icon('star')+esc(t('hnBlocked'))+'</span>':'')+
-      '<span class="badge dim">'+esc(t('eta'))+': '+esc(F(x.eta))+'</span></div></div>'+
-      '<span class="hn-n">'+A(x[key]).length+' '+esc(t('hnAsks'))+'</span></header>'+
-      '<div class="hn-body"><div><h4 class="sub-h">'+esc(t('hnWhat'))+'</h4>'+list(A(x[key]),'')+'</div>'+
-      '<div class="hn-why"><h4 class="sub-h">'+icon('target')+esc(t('hnWhy'))+'</h4><p>'+esc(F(x.kpi))+'</p></div></div>'+
-      '<div class="hn-proof"><h4 class="sub-h">'+icon('chart')+esc(t('hnProof'))+'</h4>'+
-      (ed?'<textarea rows="3" data-bench="'+esc(x.id)+'" placeholder="'+esc(t('hnProofPh'))+'">'+esc(bench)+'</textarea>'
-        :(bench?'<p class="hn-bench">'+esc(bench)+'</p>':'<p class="none">'+esc(t('hnNoProof'))+'</p>'))+'</div></article>';
+  const V=view(); ensureHelp(V);
+  const H=V.help, ed=editable(), ini=V.si.initiatives;
+  const num=id=>{ const i=ini.findIndex(x=>x.id===id); return i<0?null:i+1; };
+  const cnt=k=>H.asks.filter(a=>a.to===k).length;
+  const cell=(a,f,ph)=>{
+    const v=F(a[f]);
+    if(ed) return '<textarea rows="2" data-hn="'+esc(a.id)+'" data-hf="'+f+'" placeholder="'+esc(ph)+'">'+esc(v)+'</textarea>';
+    return v?'<div class="hn2-val">'+esc(v)+'</div>':'<div class="hn2-empty">\u2014</div>';
   };
-  const col=(g,key,label,cls,n)=>'<section class="hn-col"><div class="hn-col-head '+cls+'"><span class="dot '+cls+'"></span><h3>'+esc(t('hnFor'))+' '+label+'</h3>'+
-    '<span class="hn-col-n">'+n+' '+esc(t('hnAsks'))+' \u00b7 '+g.length+' '+esc(t('initiatives')).toLowerCase()+'</span></div>'+
-    (g.length?g.map(x=>card(x,key,cls)).join(''):'<div class="empty">'+esc(t('noAsks'))+'</div>')+'</section>';
-  const withBench=d.initiatives.filter(x=>x.bench&&F(x.bench)).length;
-  $('page-help').innerHTML='<section class="section"><h2 class="section-title">'+icon('bolt')+esc(t('hnTitle'))+'</h2>'+
-    '<p class="section-lead">'+esc(t('hnLead'))+'</p>'+
-    '<div class="kpis" style="margin-bottom:18px">'+
-    '<div class="kpi"><div class="k-label"><span class="dot meta"></span>'+esc(t('asksMeta'))+'</div><div class="k-value">'+nm+'</div><div class="k-context">'+esc(t('initiativesWith')(gm.length))+'</div></div>'+
-    '<div class="kpi"><div class="k-label"><span class="dot boost"></span>'+esc(t('asksBoost'))+'</div><div class="k-value">'+nb+'</div><div class="k-context">'+esc(t('initiativesWith')(gb.length))+'</div></div>'+
-    '<div class="kpi"><div class="k-label">'+esc(t('topPriority'))+'</div><div class="k-value">'+d.initiatives.filter(x=>x.top).length+'</div><div class="k-context">'+esc(t('prerequisite'))+'</div></div>'+
-    '<div class="kpi"><div class="k-label">'+esc(t('hnProof'))+'</div><div class="k-value">'+withBench+'</div><div class="k-context">'+esc(t('hnWith'))+'</div></div></div>'+
-    '<div class="hn-grid">'+col(gm,'helpMeta','Meta','meta',nm)+col(gb,'helpBoost','Boost','boost',nb)+'</div></section>';
+  const row=(a,i,list)=>{
+    const chips=(a.links||[]).map(id=>{ const n=num(id); if(!n) return ''; const x=ini[n-1];
+      return '<button class="hn2-chip" data-act="goto-si" data-id="'+esc(id)+'" title="'+esc(F(x.name))+'">#'+n+'</button>'; }).join('');
+    let h='<div class="hn2-row'+(a.top?' top':'')+'">';
+    h+='<div class="hn2-ask">';
+    if(ed){
+      h+='<div class="hn2-edit-top"><button class="icon-btn'+(a.top?' on':'')+'" data-act="hn-top" data-id="'+esc(a.id)+'" title="'+esc(t('hnPrereq'))+'">'+icon('star')+'</button>'+
+        '<input type="text" data-hn="'+esc(a.id)+'" data-hf="text" value="'+esc(F(a.text))+'" placeholder="'+esc(t('hnAskPh'))+'"></div>'+
+        '<input type="text" class="hn2-why-in" data-hn="'+esc(a.id)+'" data-hf="why" value="'+esc(F(a.why))+'" placeholder="'+esc(t('hnWhyPh'))+'">'+
+        '<div class="hn2-links-ed">'+ini.map((x,k)=>'<button class="hn2-chip" data-act="hn-link" data-id="'+esc(a.id)+'" data-link="'+esc(x.id)+'" aria-pressed="'+((a.links||[]).includes(x.id))+'" title="'+esc(F(x.name))+'">#'+(k+1)+'</button>').join('')+'</div>'+
+        '<div class="hn2-tools"><select data-hn="'+esc(a.id)+'" data-hf="to"><option value="boost"'+(a.to==='boost'?' selected':'')+'>Boost</option><option value="meta"'+(a.to==='meta'?' selected':'')+'>Meta</option></select>'+
+        '<button class="icon-btn" data-act="hn-up" data-id="'+esc(a.id)+'" aria-label="'+esc(t('moveUp'))+'">'+icon('up')+'</button>'+
+        '<button class="icon-btn" data-act="hn-down" data-id="'+esc(a.id)+'" aria-label="'+esc(t('moveDown'))+'">'+icon('down')+'</button>'+
+        '<button class="icon-btn" data-act="hn-del" data-id="'+esc(a.id)+'" aria-label="'+esc(t('del'))+'">'+icon('trash')+'</button></div>';
+    } else {
+      h+='<div class="hn2-text">'+(a.top?'<span class="hn2-star" title="'+esc(t('hnPrereq'))+'">'+icon('star')+'</span>':'')+esc(F(a.text))+'</div>'+
+        '<div class="hn2-why">'+esc(F(a.why))+(chips?' <span class="hn2-links">'+chips+'</span>':'')+'</div>';
+    }
+    h+='</div><div class="hn2-c">'+cell(a,'forecast',t('hnForecastPh'))+'</div><div class="hn2-c">'+cell(a,'proof',t('hnProofPh2'))+'</div></div>';
+    return h;
+  };
+  const panel=(k,label)=>{
+    const list=H.asks.filter(a=>a.to===k);
+    return '<section class="hn2-panel '+k+'"><div class="hn2-ph"><span class="dot '+k+'"></span><h3>'+esc(t('hnFor'))+' '+label+'</h3><span class="hn2-n">'+list.length+'</span>'+
+      (ed?'<button class="btn ghost sm" data-act="hn-add" data-to="'+k+'">'+icon('plus')+esc(t('add'))+'</button>':'')+'</div>'+
+      '<div class="hn2-head"><span>'+esc(t('hnColAsk'))+'</span><span>'+esc(t('hnColForecast'))+'</span><span>'+esc(t('hnColProof'))+'</span></div>'+
+      (list.length?list.map((a,i)=>row(a,i,list)).join(''):'<div class="hn2-emptyrow">'+esc(t('noAsks'))+'</div>')+'</section>';
+  };
+  const pre=H.asks.filter(a=>a.top).length;
+  $('page-help').innerHTML='<div class="hn2">'+
+    '<div class="hn2-top"><div class="hn2-tt">'+
+      (ed?'<input type="text" class="hn2-title-in" data-hmeta="title" value="'+esc(F(H.meta.title))+'"><input type="text" data-hmeta="lead" value="'+esc(F(H.meta.lead))+'">'
+         :'<h2>'+esc(F(H.meta.title))+'</h2><p>'+esc(F(H.meta.lead))+'</p>')+
+    '</div><div class="hn2-counts">'+
+      '<div><b>'+cnt('boost')+'</b><span><span class="dot boost"></span>Boost</span></div>'+
+      '<div><b>'+cnt('meta')+'</b><span><span class="dot meta"></span>Meta</span></div>'+
+      '<div><b class="or">'+pre+'</b><span>'+icon('star')+esc(t('hnPrereqShort'))+'</span></div>'+
+    '</div></div>'+
+    '<div class="hn2-grid">'+panel('boost','Boost')+panel('meta','Meta')+'</div></div>';
 }
 
+function dirtyLight(){ dirty=true; renderStatus(); clearTimeout(draftTimer); draftTimer=setTimeout(()=>lsSet(LS.draft,{data:state,dirty:true}),400); }
 /* ---------------- mutations ---------------- */
 let draftTimer=null,lightTimer=null;
 function touch(heavy){
@@ -431,6 +459,9 @@ document.addEventListener('input',e=>{
   if(el.dataset.ex){ const [o,k,kind]=exTarget(el.dataset.ex); if(!o) return;
     if(kind==='num') o[k]=+el.value||0; else if(kind==='raw') o[k]=el.value; else setF(o[k],el.value);
     dirty=true; clearTimeout(draftTimer); draftTimer=setTimeout(()=>lsSet(LS.draft,{data:state,base:baseVersion,dirty:true}),400); renderStatus(); return; }
+  if(el.dataset.hmeta){ ensureHelp(state); setF(state.help.meta[el.dataset.hmeta],el.value); dirtyLight(); return; }
+  if(el.dataset.hn&&el.dataset.hf&&el.tagName!=='SELECT'){ ensureHelp(state); const a=state.help.asks.find(x=>x.id===el.dataset.hn);
+    if(a){ if(!a[el.dataset.hf]) a[el.dataset.hf]={en:'',pt:''}; setF(a[el.dataset.hf],el.value); dirtyLight(); } return; }
   if(el.dataset.bench){ const x=find(el.dataset.bench);
     if(x){ if(!x.bench) x.bench={en:'',pt:''}; setF(x.bench,el.value); dirty=true; renderStatus();
       clearTimeout(draftTimer); draftTimer=setTimeout(()=>lsSet(LS.draft,{data:state,dirty:true}),400); }
@@ -448,6 +479,7 @@ document.addEventListener('input',e=>{
 document.addEventListener('change',e=>{
   const el=e.target; if(!editable()) return;
   if(el.dataset.obj!=null&&el.dataset.f==='color'){ touch(true); return; }
+  if(el.dataset.hn&&el.dataset.hf==='to'){ ensureHelp(state); const a=state.help.asks.find(x=>x.id===el.dataset.hn); if(a){ a.to=el.value; touch(true); } return; }
   if(el.dataset.fn||el.dataset.ex){ if(tab==='exec') renderExec(); else touch(true); return; }
   const x=el.dataset.id&&find(el.dataset.id); if(!x) return;
   if(el.type==='checkbox'){ x[el.dataset.f]=el.checked; touch(true); return; }
@@ -508,6 +540,18 @@ document.addEventListener('click',e=>{
       viewing=null; dirty=false; lsSet(LS.draft,null); mode='edit'; renderAll(); }); break; }
     case 'exit-view': viewing=null; renderAll(); break;
     case 'pull': pullRemote(); break;
+    case 'goto-si': tab='si'; lsSet(LS.prefs,{lang:lang,tab:tab}); open.add(id); detailOpen=true; renderAll();
+      { const el=$('card-'+id); if(el){ el.scrollIntoView({behavior:'smooth',block:'start'}); el.classList.add('flash'); setTimeout(()=>el.classList.remove('flash'),1300);} } break;
+    case 'hn-add': { ensureHelp(state); state.help.asks.push({id:'h'+Date.now().toString(36),to:b.dataset.to,top:false,links:[],
+        text:{en:STR.en.hnNewAsk,pt:STR.pt.hnNewAsk},why:{en:'',pt:''},forecast:{en:'',pt:''},proof:{en:'',pt:''}}); touch(true); break; }
+    case 'hn-del': { ensureHelp(state); const a=state.help.asks.find(x=>x.id===id);
+      confirmBox(t('del'),F(a.text),t('del'),()=>{ state.help.asks=state.help.asks.filter(x=>x.id!==id); touch(true); }); break; }
+    case 'hn-top': { ensureHelp(state); const a=state.help.asks.find(x=>x.id===id); if(a){ a.top=!a.top; touch(true);} break; }
+    case 'hn-link': { ensureHelp(state); const a=state.help.asks.find(x=>x.id===id); if(a){ a.links=a.links||[]; const L=b.dataset.link;
+        a.links=a.links.includes(L)?a.links.filter(z=>z!==L):a.links.concat([L]); touch(true);} break; }
+    case 'hn-up': case 'hn-down': { ensureHelp(state); const arr=state.help.asks, i=arr.findIndex(x=>x.id===id), to=arr[i].to;
+        let j=i; do{ j+= act==='hn-up'?-1:1; }while(j>=0&&j<arr.length&&arr[j].to!==to);
+        if(j<0||j>=arr.length) return; const tmp=arr[i]; arr[i]=arr[j]; arr[j]=tmp; touch(true); break; }
     case 'view-original': viewing={kind:'original'}; closeDrawer(); renderAll(); window.scrollTo({top:0}); break;
     case 'view-version': openVersion(id); break;
     case 'close-modal': closeModal(); break;
@@ -576,7 +620,7 @@ async function openVersion(id){
   let data=v.data;
   if(!data){ try{ data=await openVersionRemote(id); }catch(e){ data=null; } }
   if(!data){ toast(t('loadErr'),true); return; }
-  viewing={kind:'version',id:v.id,label:v.label,savedAt:v.savedAt,data:data};
+  viewing={kind:'version',id:v.id,label:v.label,savedAt:v.savedAt,data:ensureHelp(data)};
   closeDrawer(); renderAll(); window.scrollTo({top:0});
 }
 let pendingLogo=null;
@@ -614,7 +658,7 @@ async function loadShared(){
   contentSha=c.sha;
   remoteMeta={updatedAt:c.json.updatedAt,updatedBy:c.json.updatedBy};
   versions=(c.json.versions||[]).slice().sort((a,b)=>b.savedAt-a.savedAt);
-  return (c.json.data&&c.json.data.schema===ORIGINAL.schema)?c.json.data:null;
+  return (c.json.data&&c.json.data.schema===ORIGINAL.schema)?ensureHelp(c.json.data):null;
 }
 async function saveShared(rec){
   if(!token){ toast(t('needToken'),true); return false; }
@@ -655,7 +699,7 @@ async function pollRemote(){
       versions=(c.json.versions||[]).sort((a,b)=>b.savedAt-a.savedAt);
       if(dirty){ remoteAhead=true; remoteMeta={updatedAt:c.json.updatedAt,updatedBy:c.json.updatedBy}; renderBanner(); renderStatus(); }
       else if(!viewing&&c.json.data&&c.json.data.schema===ORIGINAL.schema){
-        state=c.json.data; contentSha=c.sha; remoteMeta={updatedAt:c.json.updatedAt,updatedBy:c.json.updatedBy};
+        state=ensureHelp(c.json.data); contentSha=c.sha; remoteMeta={updatedAt:c.json.updatedAt,updatedBy:c.json.updatedBy};
         renderAll(); toast(t('lastEdit')+' '+(c.json.updatedBy||''));
       }
     }
@@ -708,7 +752,7 @@ function loadPrefs(){
 }
 function loadDraft(){
   const draft=lsGet(LS.draft);
-  if(draft&&draft.data&&draft.data.schema===ORIGINAL.schema&&draft.dirty){ state=draft.data; dirty=true; return true; }
+  if(draft&&draft.data&&draft.data.schema===ORIGINAL.schema&&draft.dirty){ state=ensureHelp(draft.data); dirty=true; return true; }
   return false;
 }
 async function boot(){
