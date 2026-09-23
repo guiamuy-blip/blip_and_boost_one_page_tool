@@ -179,7 +179,10 @@ main{padding:20px 24px 64px;max-width:1440px;margin:0 auto}
 .chip{background:var(--bg-input);border:1px solid var(--border-input);border-radius:var(--radius);color:var(--text-secondary);padding:5px 9px;font-size:11px;cursor:pointer;display:inline-flex;gap:6px;align-items:center}
 .chip:hover{border-color:var(--brand-orange);color:var(--text-primary)}
 .chip[aria-pressed="true"]{background:var(--brand-orange);border-color:var(--brand-orange);color:#fff;font-weight:700}
-input[type=text],input[type=search],input[type=number],select,textarea{background:var(--bg-input);border:1px solid var(--border-input);border-radius:var(--radius);color:var(--text-primary);padding:7px 9px;width:100%;outline:none}
+input[type=text],input[type=search],input[type=number],input[type=password],select,textarea{background:var(--bg-input);border:1px solid var(--border-input);border-radius:var(--radius);color:var(--text-primary);padding:7px 9px;width:100%;outline:none}
+input:-webkit-autofill,input:-webkit-autofill:hover,input:-webkit-autofill:focus{-webkit-text-fill-color:var(--text-primary);-webkit-box-shadow:0 0 0px 1000px var(--bg-input) inset;box-shadow:0 0 0px 1000px var(--bg-input) inset;transition:background-color 9999s ease-in-out 0s}
+input[type=password]{letter-spacing:2px}
+#lg-go[disabled]{opacity:.6;cursor:progress}
 input:focus,select:focus,textarea:focus{border-color:var(--brand-orange)}
 textarea{resize:vertical;min-height:70px;line-height:1.4}
 select{cursor:pointer}

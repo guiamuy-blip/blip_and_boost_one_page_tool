@@ -78,9 +78,9 @@ window.CFG = {
 
 ---
 
-## Passo 5 — Criar o token de edição
+## Passo 5 — Criar a chave de acesso (token do GitHub)
 
-O token é o que autoriza a aplicação a gravar os dados no repositório. Quem tem o token edita e salva; quem não tem apenas visualiza.
+Essa chave é o que autoriza a aplicação a gravar os dados no repositório. Ela virou o único campo de login: **quem digita a chave certa, entra e já pode editar e salvar.**
 
 1. Clique na sua foto (canto superior direito) → **Settings**.
 2. No fim do menu da esquerda, clique em **Developer settings**.
@@ -99,10 +99,9 @@ O token é o que autoriza a aplicação a gravar os dados no repositório. Quem 
 
 1. Abra `https://SEU-USUARIO.github.io/boost-blip-onepage/`.
 2. Na tela de login informe:
-   - **Senha de acesso:** `blipandboost4ever`
+   - **Chave de acesso:** cole o token gerado no Passo 5. É a mesma chave para todo o time — compartilhe por um canal privado (não pelo próprio GitHub).
    - **Seu nome:** aparece para os outros como autor da última alteração.
-   - **Token de edição:** cole o token do Passo 5 **apenas se a pessoa for editar**. Quem só vai ver deixa em branco.
-3. Pronto. Alterne entre as abas, edite no modo **Edição** e clique em **Salvar versão** para publicar para todos.
+3. Pronto. Todo mundo que entrar já pode editar. Alterne entre as abas, edite no modo **Edição** e clique em **Salvar versão** para publicar para todos.
 
 Como funciona a convivência entre vários usuários:
 - A aplicação verifica o repositório a cada 20 segundos.
@@ -122,7 +121,7 @@ Pela própria aplicação, no modo Edição. Não é preciso mexer no GitHub de 
 
 ## Segurança — leia antes de compartilhar
 
-- **A senha fica no código da aplicação.** Ela impede o acesso casual de quem tropeçar no link, mas alguém com conhecimento técnico consegue lê-la no código-fonte. Não é um controle de acesso corporativo.
-- **O token dá permissão de escrita nesse repositório.** Compartilhe só com quem precisa editar, por canal privado. Se vazar, vá em Developer settings → Fine-grained tokens → **Revoke** e gere outro.
+- **A chave de acesso é o próprio token do GitHub — não fica escrita em nenhum arquivo do repositório.** Cada pessoa digita a chave na tela de login; ela é guardada só no navegador dela. Compartilhe a chave por um canal privado (Slack, WhatsApp), nunca dentro do repositório.
+- **Quem tem a chave, edita.** Não existe mais um modo "somente visualização": a chave dá acesso e permissão de edição juntos. Se alguém que não deveria mais ter acesso a obtiver, revogue-a (próximo item) e gere uma nova para o time.
 - **Nunca coloque o token dentro de um arquivo do repositório.** O GitHub detecta e cancela o token automaticamente; além disso, ficaria público. Ele deve ser digitado na tela de login, onde fica guardado apenas no navegador de cada pessoa.
 - **O conteúdo dos dados fica público**, já que o repositório é público. Se as informações da conta Boost não puderem ser públicas, o caminho é outro: repositório privado com GitHub Pages pago, ou um backend com autenticação real (Firebase, Supabase). Posso montar essa versão se preferir.
