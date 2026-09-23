@@ -431,3 +431,20 @@ footer{border-top:1px solid var(--border);padding:14px 24px;font-size:11px;color
 .hn2-head{padding:4px 12px}
 .hn2-empty{padding:3px 0;font-size:10px}
 main:has(#page-help.active){padding-top:12px}
+
+/* Initiative detail toggle: title and subtitle on separate lines */
+.big-toggle .bt-t,.big-toggle .bt-s{display:block}
+.big-toggle .bt-s{margin-top:4px}
+
+/* ===== ROI calculator tab ===== */
+main:has(#page-roi.active){max-width:none;padding:12px 16px 12px}
+.roi-bar{display:flex;align-items:center;gap:10px;font-size:12px;color:var(--text-secondary);background:var(--bg-surface);border:1px solid var(--border);border-left:3px solid var(--status-positive);border-radius:var(--radius);padding:7px 12px;margin-bottom:10px;min-height:38px;flex-wrap:wrap}
+.roi-bar svg.i{width:15px;height:15px;color:var(--status-positive)}
+.roi-bar.dirty{border-left-color:var(--status-warn);color:var(--text-primary)}
+.roi-bar.dirty svg.i{color:var(--status-warn)}
+.roi-bar.ro{border-left-color:var(--brand-blue)}
+.roi-bar.ro svg.i{color:var(--brand-blue)}
+.roi-bar .btn{margin-left:auto}
+.roi-frame{display:block;width:100%;height:calc(100vh - 205px);min-height:560px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg-page)}
+@media (max-width:640px){.roi-frame{height:calc(100vh - 150px)}}
+@media print{.roi-bar{display:none!important}.roi-frame{height:auto;min-height:0;border:none}}

@@ -48,6 +48,9 @@ const STR={
   hnForecastPh:'e.g. +X% conversion, +N sales/month',hnProofPh2:'e.g. Client Y: +Z% after the same change',
   hnAskPh:'What we need, in one line',hnWhyPh:'Why it matters, in one line',hnPrereq:'Prerequisite for other asks',hnPrereqShort:'Prerequisites',
   hnNewAsk:'New ask',
+  tabROI:'ROI Calculator',tabROIsub:'Scenarios, LTV and ROI simulation',roiSrc:'Boost Mobile ROI & LTV simulator \u2014 scenarios shared by the team',
+  roiDirty:'You have changes not yet shared with the team.',roiPublish:'Publish to team',roiSynced:'Scenarios, formulas and presets are shared with the team',
+  roiReadonly:'Viewing a saved version: the calculator is read-only. Changes here are not kept.',
   loginTitle:'Boost \u00d7 Blip One Page',loginSub:'Shared workspace. Sign in to view and edit.',
   loginPass:'Access key',loginName:'Your name',
   loginPassHint:'The shared GitHub access key given to you by your team. Anyone who signs in can view and edit.',
@@ -100,6 +103,9 @@ const STR={
   hnForecastPh:'ex.: +X% de convers\u00e3o, +N vendas/m\u00eas',hnProofPh2:'ex.: Cliente Y: +Z% ap\u00f3s a mesma mudan\u00e7a',
   hnAskPh:'O que precisamos, em uma linha',hnWhyPh:'Por que importa, em uma linha',hnPrereq:'Pr\u00e9-requisito para os demais pedidos',hnPrereqShort:'Pr\u00e9-requisitos',
   hnNewAsk:'Novo pedido',
+  tabROI:'Calculadora de ROI',tabROIsub:'Cen\u00e1rios, LTV e simula\u00e7\u00e3o de ROI',roiSrc:'Simulador de ROI e LTV da Boost Mobile \u2014 cen\u00e1rios compartilhados pelo time',
+  roiDirty:'Voc\u00ea tem altera\u00e7\u00f5es ainda n\u00e3o compartilhadas com o time.',roiPublish:'Publicar para o time',roiSynced:'Cen\u00e1rios, f\u00f3rmulas e presets s\u00e3o compartilhados com o time',
+  roiReadonly:'Visualizando uma vers\u00e3o salva: a calculadora est\u00e1 em modo somente leitura. Altera\u00e7\u00f5es aqui n\u00e3o s\u00e3o mantidas.',
   loginTitle:'One Page Boost \u00d7 Blip',loginSub:'Espa\u00e7o compartilhado. Entre para visualizar e editar.',
   loginPass:'Chave de acesso',loginName:'Seu nome',
   loginPassHint:'A chave de acesso do GitHub compartilhada pelo seu time. Quem entrar pode visualizar e editar.',
@@ -151,17 +157,21 @@ function renderAll(){
   $('page-si').classList.toggle('active',tab==='si');
   $('page-exec').classList.toggle('active',tab==='exec');
   $('page-help').classList.toggle('active',tab==='help');
+  $('page-roi').classList.toggle('active',tab==='roi');
   renderLogos(); renderTabs(); renderBanner();
   if(tab==='si'){ renderHero(); renderFbox(); renderObjEditor(); renderMap(); renderDetailHead(); renderFilters(); renderCards(); renderBoard(); }
   else if(tab==='exec') renderExec();
+  else if(tab==='roi') renderRoi();
   else renderHelp();
   renderStatus();
+  syncRoi(false);
 }
 function renderStatus(){
   const el=$('save-indicator'); el.classList.toggle('dirty',dirty);
   const where=baseVersion?baseVersion.label:t('original');
   el.textContent=dirty?(t('unsaved')+' '+where):where;
-  $('foot-src').textContent=t('source')+': '+(tab==='exec'?F(view().exec.footer.src).replace(/^(Source|Fonte):\s*/,''):F(view().si.meta.source));
+  $('foot-src').textContent=t('source')+': '+(tab==='exec'?F(view().exec.footer.src).replace(/^(Source|Fonte):\s*/,''):tab==='roi'?t('roiSrc'):F(view().si.meta.source));
+  renderRoiBar();
   const who=$('who');
   if(who) who.textContent=(profile?t('editorAs')+' '+profile.name:'')+
     (remoteMeta&&remoteMeta.updatedBy?' \u00b7 '+t('lastEdit')+' '+remoteMeta.updatedBy:'')+(syncing?' \u00b7 '+t('syncing'):'');
@@ -170,7 +180,7 @@ function renderStatus(){
 }
 function renderTabs(){
   const mk=(id,ic,tt,sb)=>'<button class="tab" role="tab" data-tab="'+id+'" aria-selected="'+(tab===id)+'"><span class="t-ic">'+icon(ic)+'</span><span><span class="t-tt">'+esc(tt)+'</span><span class="t-sb" style="display:block">'+esc(sb)+'</span></span></button>';
-  $('tabbar').innerHTML=mk('si','flag',t('tabSI'),t('tabSIsub'))+mk('exec','dash',t('tabEX'),t('tabEXsub'))+mk('help','bolt',t('tabHN'),t('tabHNsub'));
+  $('tabbar').innerHTML=mk('si','flag',t('tabSI'),t('tabSIsub'))+mk('exec','dash',t('tabEX'),t('tabEXsub'))+mk('help','bolt',t('tabHN'),t('tabHNsub'))+mk('roi','chart',t('tabROI'),t('tabROIsub'));
 }
 function renderLogos(){
   [['blip','<span class="wm-blip">blip</span>'],['boost','<span class="wm-boost">Boost <span>Mobile</span></span>']].forEach(([k,wm])=>{
@@ -322,6 +332,7 @@ function renderCards(){
   }).join('');
 }
 function renderBoard(){
+  if(!$('board')) return;
   const d=view().si, shown=d.initiatives.filter(matches);
   const col=(k,label,key)=>{
     const g=shown.filter(x=>A(x[key]).length), total=g.reduce((a,x)=>a+A(x[key]).length,0);
@@ -369,7 +380,7 @@ function renderExec(){
   $('page-exec').innerHTML=h;
 }
 
-function ensureHelp(d){ if(d&&!d.help&&ORIGINAL&&ORIGINAL.help) d.help=clone(ORIGINAL.help); return d; }
+function ensureHelp(d){ if(d&&!d.help&&ORIGINAL&&ORIGINAL.help) d.help=clone(ORIGINAL.help); if(d&&!d.roi&&ORIGINAL&&ORIGINAL.roi) d.roi=clone(ORIGINAL.roi); return d; }
 function renderHelp(){
   const V=view(); ensureHelp(V);
   const H=V.help, ed=editable(), ini=V.si.initiatives;
@@ -421,6 +432,40 @@ function renderHelp(){
     '<div class="hn2-grid">'+panel('boost','Boost')+panel('meta','Meta')+'</div></div>';
 }
 
+/* ---------------- ROI calculator (embedded roi.html) ---------------- */
+let roiReady=false, roiSentRef, roiSentLang=null, roiSentRO=null, roiBase=new Set();
+function markRoiBase(r){ roiBase=new Set(((r||{}).scenarios||[]).map(s=>s.id)); }
+function renderRoi(){
+  if(!$('roi-frame')){
+    $('page-roi').innerHTML='<div class="roi-bar" id="roi-bar"></div>'+
+      '<iframe id="roi-frame" class="roi-frame" src="roi.html?embed=1" title="ROI calculator"></iframe>';
+  }
+  renderRoiBar();
+}
+function renderRoiBar(){
+  const b=$('roi-bar'); if(!b) return;
+  if(viewing){ b.className='roi-bar ro'; b.innerHTML=icon('shield')+'<span>'+esc(t('roiReadonly'))+'</span>'; return; }
+  if(dirty){ b.className='roi-bar dirty'; b.innerHTML=icon('history')+'<span>'+esc(t('roiDirty'))+'</span>'+
+    '<button class="btn sm" data-act="roi-publish">'+icon('save')+esc(t('roiPublish'))+'</button>'; return; }
+  b.className='roi-bar'; b.innerHTML=icon('team')+'<span>'+esc(t('roiSynced'))+
+    (remoteMeta&&remoteMeta.updatedBy?' \u00b7 '+esc(t('lastEdit'))+' '+esc(remoteMeta.updatedBy):'')+(syncing?' \u00b7 '+esc(t('syncing')):'')+'</span>';
+}
+function syncRoi(force){
+  const f=$('roi-frame'); if(!f||!roiReady||!f.contentWindow) return;
+  const ro=!!viewing, ref=(view()&&view().roi)||null;
+  if(!force&&ref===roiSentRef&&lang===roiSentLang&&ro===roiSentRO) return;
+  roiSentRef=ref; roiSentLang=lang; roiSentRO=ro;
+  f.contentWindow.postMessage({type:'roi:init',shared:ref?clone(ref):null,lang:lang,readOnly:ro},'*');
+}
+window.addEventListener('message',e=>{
+  const f=$('roi-frame');
+  if(!f||e.source!==f.contentWindow||!e.data||typeof e.data!=='object') return;
+  if(e.data.type==='roi:ready'){ roiReady=true; syncRoi(true); return; }
+  if(e.data.type==='roi:state'){
+    if(viewing) return;
+    state.roi=e.data.state; roiSentRef=state.roi; dirtyLight();
+  }
+});
 function dirtyLight(){ dirty=true; renderStatus(); clearTimeout(draftTimer); draftTimer=setTimeout(()=>lsSet(LS.draft,{data:state,dirty:true}),400); }
 /* ---------------- mutations ---------------- */
 let draftTimer=null,lightTimer=null;
@@ -540,6 +585,7 @@ document.addEventListener('click',e=>{
       viewing=null; dirty=false; lsSet(LS.draft,null); mode='edit'; renderAll(); }); break; }
     case 'exit-view': viewing=null; renderAll(); break;
     case 'pull': pullRemote(); break;
+    case 'roi-publish': doSave(); break;
     case 'goto-si': tab='si'; lsSet(LS.prefs,{lang:lang,tab:tab}); open.add(id); detailOpen=true; renderAll();
       { const el=$('card-'+id); if(el){ el.scrollIntoView({behavior:'smooth',block:'start'}); el.classList.add('flash'); setTimeout(()=>el.classList.remove('flash'),1300);} } break;
     case 'hn-add': { ensureHelp(state); state.help.asks.push({id:'h'+Date.now().toString(36),to:b.dataset.to,top:false,links:[],
@@ -574,12 +620,13 @@ $('btn-add').onclick=()=>{
 };
 $('btn-versions').onclick=openDrawer;
 $('drawer-close').onclick=closeDrawer; $('drawer-back').onclick=closeDrawer;
-$('btn-save').onclick=()=>{ askSave(async(label,note)=>{
+function doSave(){ askSave(async(label,note)=>{
   const rec={id:'v'+Date.now().toString(36),label:label||('v'+(versions.length+1)),note:note||'',savedAt:Date.now(),data:clone(state)};
   if(!await persistVersion(rec)) return;
   baseVersion={id:rec.id,label:rec.label,savedAt:rec.savedAt}; dirty=false; lsSet(LS.draft,null);
   renderAll(); toast(t('savedToast')+': '+rec.label+'');
-}); };
+}); }
+$('btn-save').onclick=doSave;
 
 /* ---------------- dialogs ---------------- */
 function openModal(h){ $('modal').innerHTML=h; $('modal-back').classList.add('open'); const f=$('modal').querySelector('input,textarea,button'); if(f) f.focus(); }
@@ -652,13 +699,15 @@ async function ghPut(path,obj,sha,msg){
   return (await r.json()).content.sha;
 }
 let contentSha=null;
-async function loadShared(){
+async function loadShared(markBase){
   const c=await ghGet(CFG.dataPath);
   if(!c) return null;
   contentSha=c.sha;
   remoteMeta={updatedAt:c.json.updatedAt,updatedBy:c.json.updatedBy};
   versions=(c.json.versions||[]).slice().sort((a,b)=>b.savedAt-a.savedAt);
-  return (c.json.data&&c.json.data.schema===ORIGINAL.schema)?ensureHelp(c.json.data):null;
+  const data=(c.json.data&&c.json.data.schema===ORIGINAL.schema)?ensureHelp(c.json.data):null;
+  if(data&&markBase!==false) markRoiBase(data.roi);
+  return data;
 }
 async function saveShared(rec){
   if(!token){ toast(t('needToken'),true); return false; }
@@ -667,6 +716,13 @@ async function saveShared(rec){
     const cur=await ghGet(CFG.dataPath);
     contentSha=cur?cur.sha:null;
     const vlist=(cur&&cur.json.versions?cur.json.versions.slice():[]);
+    const rd=cur&&cur.json&&cur.json.data; let roiMerged=0;
+    if(rd&&rd.roi){
+      if(!state.roi){ state.roi=rd.roi; roiMerged++; }
+      else { const loc=new Set((state.roi.scenarios||[]).map(s=>s.id));
+        (rd.roi.scenarios||[]).forEach(s=>{ if(!loc.has(s.id)&&!roiBase.has(s.id)){ state.roi.scenarios.push(s); roiMerged++; } }); }
+    }
+    if(rec) rec.data=clone(state);
     if(rec){
       await ghPut(CFG.versionsPath+rec.id+'.json',{id:rec.id,label:rec.label,note:rec.note,savedAt:rec.savedAt,author:rec.author,data:rec.data},null,'version: '+rec.label);
       vlist.unshift({id:rec.id,label:rec.label,note:rec.note,savedAt:rec.savedAt,author:rec.author});
@@ -674,7 +730,9 @@ async function saveShared(rec){
     const payload={schema:ORIGINAL.schema,updatedAt:Date.now(),updatedBy:profile?profile.name:'',data:state,versions:vlist.slice(0,40)};
     contentSha=await ghPut(CFG.dataPath,payload,contentSha,(rec?'save version: '+rec.label:'update')+' \u2014 '+(profile?profile.name:''));
     remoteMeta={updatedAt:payload.updatedAt,updatedBy:payload.updatedBy};
-    versions=payload.versions; remoteAhead=false; syncing=false; renderStatus();
+    versions=payload.versions; remoteAhead=false; syncing=false; markRoiBase(state.roi);
+    if(roiMerged) syncRoi(true);
+    renderStatus();
     return true;
   }catch(e){ syncing=false; toast(t('syncErr')+': '+e.message,true); renderStatus(); return false; }
 }
@@ -697,9 +755,9 @@ async function pollRemote(){
     if(!c) return;
     if(!remoteMeta||c.json.updatedAt>remoteMeta.updatedAt){
       versions=(c.json.versions||[]).sort((a,b)=>b.savedAt-a.savedAt);
-      if(dirty){ remoteAhead=true; remoteMeta={updatedAt:c.json.updatedAt,updatedBy:c.json.updatedBy}; renderBanner(); renderStatus(); }
+      if(dirty||tab==='roi'){ remoteAhead=true; remoteMeta={updatedAt:c.json.updatedAt,updatedBy:c.json.updatedBy}; renderBanner(); renderStatus(); }
       else if(!viewing&&c.json.data&&c.json.data.schema===ORIGINAL.schema){
-        state=ensureHelp(c.json.data); contentSha=c.sha; remoteMeta={updatedAt:c.json.updatedAt,updatedBy:c.json.updatedBy};
+        state=ensureHelp(c.json.data); contentSha=c.sha; markRoiBase(state.roi); remoteMeta={updatedAt:c.json.updatedAt,updatedBy:c.json.updatedBy};
         renderAll(); toast(t('lastEdit')+' '+(c.json.updatedBy||''));
       }
     }
@@ -769,7 +827,8 @@ async function boot2(){
   state=clone(ORIGINAL);
   const hadDraft=loadDraft();
   renderAll();
-  try{ const remote=await loadShared(); if(remote&&!hadDraft){ state=remote; } renderAll(); }
+  if(hadDraft) markRoiBase(state.roi);
+  try{ const remote=await loadShared(!hadDraft); if(remote&&!hadDraft){ state=remote; } renderAll(); }
   catch(e){ toast(t('loadErr'),true); }
   startPolling();
   document.addEventListener('visibilitychange',()=>{ if(!document.hidden) pollRemote(); });
