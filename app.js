@@ -387,7 +387,7 @@ function renderExec(){
     e.acq.map(a=>'<div class="bar-row"><span class="k">'+(ed?inp('acq.'+a.id+'.label',F(a.label)):esc(F(a.label)))+'</span>'+
       '<span class="track"><span class="fill" style="width:'+(a.v/maxAcq*100)+'%;background:'+esc(a.color)+'"></span></span>'+
       '<span class="v">'+(ed?inp('acq.'+a.id+'.v',a.v,'number'):nf(a.v))+'</span></div>').join('')+'</div></div>';
-  h+='<div class="panel"><h3>'+esc(F(e.commTitle))+'</h3><table class="mini"><tr><th>'+(lang==='pt'?'Indicador':'Indicator')+'</th><th style="text-align:right">'+(lang==='pt'?'Semana 11':'Week 11')+'</th></tr>'+
+  h+='<div class="panel"><h3>'+esc(F(e.commTitle))+'</h3><table class="mini"><tr><th>'+(lang==='pt'?'Indicador':'Indicator')+'</th><th style="text-align:right">'+(lang==='pt'?'Valor':'Value')+'</th></tr>'+
     e.comm.map(c=>'<tr><td>'+(ed?inp('comm.'+c.id+'.label',F(c.label)):esc(F(c.label)))+'</td><td class="r '+esc(c.tone||'')+'">'+(ed?inp('comm.'+c.id+'.v',c.v):esc(c.v))+'</td></tr>').join('')+'</table></div></div>';
   h+='<div class="roadmap">'+e.roadmap.map(col=>'<div class="col-card '+esc(col.tone||'')+'"><h3><span>'+(ed?inp('roadmap.'+col.id+'.title',F(col.title)):esc(F(col.title)))+'</span><span class="c">'+(ed?inp('roadmap.'+col.id+'.count',col.count):esc(col.count))+'</span></h3><ul>'+
     col.items.map(it=>'<li>'+(ed?inp('rmitem.'+it.id+'.text',F(it.text)):esc(F(it.text)))+'<span class="d">'+(ed?inp('rmitem.'+it.id+'.date',F(it.date)):esc(F(it.date)))+'</span>'+
